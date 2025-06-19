@@ -14,19 +14,19 @@ class MyAddonProperties(bpy.types.PropertyGroup):
     target: bpy.props.PointerProperty(
         type=bpy.types.Object,
         name="Target Rig",
-        description="Generated",
+        description="Generated & Finalize Armature",
         poll=lambda self, obj: obj.type == 'ARMATURE' and obj.data is not self)
     
     hair: bpy.props.PointerProperty(
         type=bpy.types.Object,
         name="Hair Rig",
-        description="Simulate bone",
+        description="Simulated bone",
         poll=lambda self, obj: obj.type == 'ARMATURE' and obj.data is not self)
     
     metarig: bpy.props.PointerProperty(
         type=bpy.types.Object,
         name="Meta Rig",
-        description="The meta rig",
+        description="The Meta rig",
         poll=lambda self, obj: obj.type == 'ARMATURE' and obj.data is not self)
     
     influence: FloatProperty(
@@ -1572,461 +1572,13 @@ class UnlinkAction(bpy.types.Operator):
 #class naming 'CATEGORY_PT_Name'
 
 #Above this line is Function
-#Below this line is UI
-#--------------------------------------------------------------------------------------------------------------------------------------------------------
-
-class PT_DECLARE_panel(bpy.types.Panel):
-  
-    #where to add the panel
-    bl_space_type =  "VIEW_3D" #3D viewport
-    bl_region_type = "UI"  #side bar
-
-    #add labels
-    bl_category = "COLORY"
-    bl_label = "Declare"
-    def draw(self, context: Context):
-      """define the layout of the panel"""
-      layout = self.layout
-      col = layout.column()
-      box = col.box()
-      row = box.row() 
-      row.label(text="Info",icon="RNA")
-      # Display the property in the panel
-      target = context.scene.my_addon_props.target
-      
-      
-      row = box.row()
-      row.prop(context.scene.my_addon_props, "metarig")
-      row = box.row()
-      row.prop(context.scene.my_addon_props, "target")
-      row = box.row()
-      row.prop(context.scene.my_addon_props, "hair")
-      
-      
-      #clean parrt 
-      col = layout.column()
-      col.separator()  
-      col = layout.column()
-      col.separator()  
-
-      box = col.box()
-      row = box.row() 
-      row.label(text="Clean up",icon="ORPHAN_DATA")
-      row = box.row() 
-      row.operator("object.purge_operator", text="Purge", icon="TRASH")  
-
-#After
-
-class VIEW3D_PT_afterGenerate_panel(bpy.types.Panel):
-  
-    #where to add tool After 
-    bl_space_type =  "VIEW_3D" #3D viewport
-    bl_region_type = "UI"  #side bar
-    bl_idname =  "VIEW3D_PT_afterGenerate_panel"
-    #add labels
-    bl_category = "COLORY"
-    bl_label = "After Generate Tool"
-
-    def draw(self, context: Context):
-      """define the layout of the panel"""
-      layout = self.layout
-      layout.label(text="Main Tool:")
-
-      col = layout.column(align=True)
-      
-      
-
-        
-      if  (bpy.context.scene.my_addon_props.target != None):
-        row = col.row()
-        row.separator()
-        row = col.row()
-        row.operator("object.magic", text= "Magical in your life",icon="EXPERIMENTAL")
-     
-      col = layout.column()
-      col.separator()
-
-      
-      box = col.box()  
-      #soon - having individual panel
-      row = box.row()
-      row.operator("object.control_viewport_display", text= "Viewport Display",icon="SHADERFX")
-      row = box.row()
-      row.operator("object.driversubdivision", text= "Subdivision Driver",icon="SHADERFX")
-
-      
-class VIEW3D_PT_UItidy_panel(bpy.types.Panel):
-  
-    #where to add the panel
-    bl_space_type =  "VIEW_3D" #3D viewport
-    bl_region_type = "UI"  #side bar
-    bl_parent_id = "VIEW3D_PT_afterGenerate_panel"
-    #add labels
-    bl_category = "COLORY"
-    bl_label = "UI"
-    
-    def draw(self, context: Context):
-      """define the layout of the panel"""
-      pass
-      layout = self.layout
-      
-      col = layout.column()
-      box = col.box()
-      row = box.row()
-      row.label(text="UI script",icon="ALIGN_JUSTIFY")
-
-      row = box.row()
-      row.operator("object.textbutton_operator",text="Copy UI Spacing here",icon = "DUPLICATE") 
-      
-      
-      col = layout.column()
-
-class AnimatorCleaning_SubPanel(bpy.types.Panel):
-    bl_label = "Animator Cleaning"
-    bl_idname = "AnimatorCleaning_SubPanel"
-    bl_parent_id = "VIEW3D_PT_afterGenerate_panel"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "COLORY"
-    
-
-    def draw(self, context):
-        layout = self.layout
-
-        # Create content for the sub-panel
-       
-        col = layout.column()
-       
-        row = col.row()  
-        row.separator()
-        
-        box = col.box()
-       
-        row = box.row()
-        #layer
-        row.label(text="Layer",icon="ALIGN_JUSTIFY")
-        row = box.row()
-        row.operator("object.turn_on_all_layers", text= "Turn ALL Layer on", icon="HIDE_OFF")
-        row.operator("object.turn_only_root_layers", text= "Turn Layer Root", icon="EVENT_R")
-        
-        
-        row = box.row()
-        row.operator("object.turn_only_def_layers", text= "Turn DEF Layer on", icon="CONSTRAINT_BONE")
-        row.operator("object.turn_only_mch_layers", text= "Turn MCH Layer on", icon="CONSTRAINT_BONE")
-        
-        row = box.row()
-        row.separator()
-        
-            
-        row = box.row()
-        row.operator("object.turn_anim_layers", text= "Turn ANIM layer on", icon="ANIM") 
-        
-        row = box.row()
-        row.separator()
-        
-        row = box.row() 
-        row.operator("object.cleanup_ops", text= "Clean Layer",icon="BRUSH_DATA" )
-        #end_layer
-
-
-        row = col.row()  
-        row.separator()
-        row = col.row()  
-        row.separator()
-        
-        #
-        box = col.box()
-        row = box.row() 
-        row.label(text="Default Setting",icon="ALIGN_JUSTIFY")
-        if  (bpy.context.scene.my_addon_props.target != None) :
-        
-            
-            row = box.row()
-            row.operator("object.ksetting_ops", text= "IK FK setting")  
-        #
-        
-        row = col.row()  
-        row.separator()
-        row = col.row()  
-        row.separator()
-        
-        #
-        box = col.box()
-        row = box.row()
-        row.label(text="Edit",icon="MOD_SOFT")
-        row = box.row()
-        row.operator("object.addrollback", text= "Add roll control",icon="BONE_DATA")
-        #
-        row = col.row()  
-        row.separator()
-        row = col.row()  
-        row.separator()
-
-        #
-        box = col.box()
-        row = box.row() 
-        row.label(text="Tidy", icon="OUTLINER_OB_ARMATURE")
-        row = box.row() 
-        row.operator("object.armature_setting", text="Tidy Armature", icon="SHADERFX") 
-
-
-#Before
-class VIEW3D_PT_beforeGenerate_panel(bpy.types.Panel):
-  
-    #where to add the panel
-    bl_space_type =  "VIEW_3D" #3D viewport
-    bl_region_type = "UI"  #side bar
-    bl_idname = "VIEW3D_PT_beforeGenerate_panel"
-    bl_category = "COLORY"
-    bl_label = "Before Generate Tool"
-
-    def draw(self, context: Context):
-      """define the layout of the panel"""
-      
-      layout = self.layout
-      layout.label(text="Main Tool:")
-
-      col = layout.column(align=True)
-      col.separator()
-
-      box = col.box()
-      row = box.row() 
-      row.label(text="Convert",icon="TRACKING_FORWARDS")
-      row = box.row()   
-      row.operator("object.change_constraint_tg", text= "Reassign Target in Metarig to RIG", icon="CONSTRAINT_BONE")
-       
-      col = layout.column()
-      col.separator()
-        
-      box = col.box()  
-      row = box.row()
-      row.label(text="Constraint",icon="CONSTRAINT")  
-      row = box.row()
-      row.operator("object.symmetry_target_contraints_lside", text= "Replace Target in L", icon="MOD_MIRROR")
-      row.operator("object.symmetry_target_contraints_rside", text= "Replace Target in R", icon="MOD_MIRROR")
-     
-class parentSwitchList_SubPanel(bpy.types.Panel):
-    bl_label = "Parent Switch List"
-    bl_parent_id = "VIEW3D_PT_beforeGenerate_panel"
-    bl_idname = "parentSwitchList_SubPanel" 
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "COLORY"
-    
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column(align=True)
-        col.separator()
-        box = col.box()
-        row = box.row()
-        row.label(text="Parent Switching List",icon="SOLO_ON")
-        row = box.row()
-        row.separator()  
-        row = box.row()
-        row.label(text="List",icon="GROUP_BONE")
-        row.label(text="Name")
-        row.label(text="Bone")
-        for label_text, copy_text_1, copy_text_2 in [("Root", "Root", "sub-Root"),
-                                                    ("P-root", "P-root", "P-root"),
-                                                    ("Shoulder.L", "Shoulder.L", "FK-Shoulder.L"),
-                                                    ("Shoulder.R", "Shoulder.R", "FK-Shoulder.R"),
-                                                    ("Hips", "Hips", "MSTR-Spine_Hips"),
-                                                    ("Torso", "Torso", "MSTR-Spine_Torso"),
-                                                    ("Chest", "Chest", "DEF-Chest"),
-                                                    ("Head", "Head", "FK-Head"),
-                                                    ("No", "No", "no"),]:
-                row = box.row()
-                row.label(text=label_text)
-                row.operator("my.copy_to_clipboard",icon="DUPLICATE",depress=False).copy_text = copy_text_1
-                row.operator("my.copy_to_clipboard",icon="BONE_DATA",depress=False).copy_text = copy_text_2
-
-        row = box.row()
-        row.separator()
-        row.separator()
-        row.separator()
-        row = box.row()
-        row.label(text="Parent Cloud_leg bo qua phanShoulder",icon="TRIA_RIGHT")
-
-class VIEW3D_PT_Hair_panel(bpy.types.Panel):
-  
-    #where to add the panel
-    bl_space_type =  "VIEW_3D" #3D viewport
-    bl_region_type = "UI"  #side bar
-    bl_idname = "VIEW3D_PT_Hair_panel"
-    bl_category = "COLORY"
-    bl_label = "Hair Tool"
-
-    def draw(self, context: Context):
-        """define the layout of the panel"""
-        
-        layout = self.layout
-        layout.label(text="!!! Readme:",icon="PINNED")
-        col = layout.column()
-        
-        box = col.box()
-        row = box.row()
-        row.label(text="Mark Sharp an edge in every strand",icon="DOT")
-        row = box.row()
-        row.label(text="Check the Root of skin modifier",icon="DOT")
-        
-        row = box.row()
-        row.label(text="Edit meshcage by Scale (CTRL A) ",icon="DOT")
-        row = box.row()
-        row.label(text="Rename & declare Hair Rig ",icon="DOT") 
-        row = box.row()
-        row.label(text="Check the direction of bones",icon="DOT")
-
-
-class generateHairbone_SubPanel(bpy.types.Panel):
-    bl_label = "Hair Bone"
-    bl_idname = "generateHairbone_SubPanel"
-    bl_parent_id = "VIEW3D_PT_Hair_panel"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "COLORY"
-    
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column(align=True)
-        col.separator()
-        box = col.box()
-        row = box.row()
-        row.label(text="Strand",icon="STRANDS")
-        row = box.row() 
-        row.operator("object.seperateedge", text= "Separate",icon="UNLINKED") 
-
-        col.separator()
-        col.separator()  
-
-        box = col.box()
-        row = box.row()
-        row.label(text="Reduce number of bones:")
-        row = box.row() 
-        row.operator("object.reducevertice", text= "Reduce")
-        row = box.row()  
-        row.separator()  
-
-
-        row = box.row()  
-        row.prop(context.scene.my_addon_props, "distance_threshhold")
-        row = box.row()  
-        row.prop(context.scene.my_addon_props, "angle_dissolve")
-        row = box.row()  
-        row.separator() 
-        row = box.row() 
-        row.operator("object.reduceverticebymergedistance", text= "Reduce by Megre distance",icon="DRIVER_DISTANCE")
-        row = box.row() 
-        row.operator("object.reduceverticebylimiteddissolve", text= "Reduce by limited Dissolve", icon="DRIVER_ROTATIONAL_DIFFERENCE")
-        
-        col.separator()
-        col.separator()  
-
-        box = col.box()
-        row = box.row()
-        row.label(text="MeshCage:")
-        row = box.row()  
-        row.operator("object.addarmature", text= "Add skin modifier",icon="MOD_SKIN")
-        row = box.row()  
-        row.operator("object.cleanmeshcage", text= "Clean cage",icon="TOOL_SETTINGS")
-        row = box.row()  
-        row.operator("object.addmeshdeform", text= "add MeshDeform",icon="MOD_MESHDEFORM")
-        
-
-        col.separator()  
-        
-        box = col.box()
-        row = box.row()
-        row.label(text="Bind:")
-        #row = box.row()  
-        #row.operator("object.hairbind", text= "Hair bind",icon="MOD_MESHDEFORM")
-        row = box.row()  
-        row.prop(context.scene.my_addon_props, "BindSub")
-        row = box.row()
-        operator = row.operator("object.bindorunbindops", text=bpy.context.scene.Custom_prop.bind_unbind_text, icon=bpy.context.scene.Custom_prop.bind_unbind_icon)
-
-        col.separator()
-        col.separator()
-        
-
-
-class secondaryChain_SubPanel(bpy.types.Panel):
-    bl_label = "Secondary Chain"
-    bl_idname = "secondaryChain_SubPanel"
-    bl_parent_id = "VIEW3D_PT_Hair_panel"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "COLORY"
-    
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column(align=True)
-        col.separator()  
-        
-
-        box = col.box()
-        row = box.row()
-        row.label(text="Generate Bone:")
-        row = box.row()  
-        row.operator("object.genarmature", text= "Generate bone",icon="MOD_ARMATURE")
-
-       
-
-        row = box.row()  
-        row.operator("object.createconstructchain", text= "Construct",icon="TOOL_SETTINGS")  
-        row = box.row()  
-        row.operator("object.renamebone", text= "Rename",icon="TOOL_SETTINGS")
-        
-        row = box.row()  
-        row.separator()  
-        row = box.row()  
-        row.separator()  
-        
-        row = box.row()  
-        row.prop(context.scene.my_addon_props, "influence")
-        row = box.row() 
-        row.operator("object.damped_chain", text= "Add Secondary to selected", icon="CONSTRAINT")
-        row = box.row()  
-        row.separator()  
-        
-            
-class VIEW3D_PT_Info(bpy.types.Panel):
-  
-    #where to add the panel
-    bl_space_type =  "VIEW_3D" #3D viewport
-    bl_region_type = "UI"  #side bar
-
-    #add labels
-    bl_category = "COLORY"
-    bl_label = "Info"
-    
-    def draw(self, context: Context):
-        """define the layout of the panel"""
-        pass
-        layout = self.layout
-      
-      
-        col = layout.column()
-        col.separator()
-        row = layout.column()
-        col.label(text="Sponsor by COLORY",icon="HEART")
-        col.separator()
-        row = layout.column()
-        col.label(text="Author: Nhi Nguyen",icon="EVENT_A")
-        col.separator()
-        row = layout.column()
-        col.label(text= f"Version: {bl_info['version']}",icon="EVENT_V")    
-            
+           
 cls= {
-    PT_DECLARE_panel
-    ,MyAddonProperties
+    MyAddonProperties
     ,change_constraintTg
     ,CleanUpLayer
     ,ksetting
     ,add_rollback
-    ,TextButton_Ops
     ,OnOffOperator
     ,SymmetryTargetContraintsRside
     ,SymmetryTargetContraintsLside
@@ -2036,7 +1588,7 @@ cls= {
     ,OBJECT_OT_TurnOnlyDefLayers
     ,OBJECT_OT_TurnOnlyMchLayers
     ,OBJECT_OT_ColoryCloudmetaAdd
-    ,VIEW3D_PT_Info
+   
     ,DampedChain
     ,PurgeOperator
     ,OBJECT_OT_TurnAnimLayers
@@ -2065,21 +1617,21 @@ def register():
     for c in cls:
         register_class(c)
     
-    #Parent Panel
-    bpy.utils.register_class(VIEW3D_PT_beforeGenerate_panel)
-    bpy.utils.register_class(VIEW3D_PT_afterGenerate_panel)
-    bpy.utils.register_class(VIEW3D_PT_Hair_panel)
-    #Sub Panel
-    bpy.utils.register_class(parentSwitchList_SubPanel)
+    # #Parent Panel
+    # bpy.utils.register_class(VIEW3D_PT_beforeGenerate_panel)
+    # bpy.utils.register_class(VIEW3D_PT_afterGenerate_panel)
+    # bpy.utils.register_class(VIEW3D_PT_Hair_panel)
+    # #Sub Panel
+    # bpy.utils.register_class(parentSwitchList_SubPanel)
     
-    bpy.utils.register_class(AnimatorCleaning_SubPanel)
-    bpy.utils.register_class(VIEW3D_PT_UItidy_panel)
-    bpy.utils.register_class(generateHairbone_SubPanel)
-    bpy.utils.register_class(secondaryChain_SubPanel)
+    # bpy.utils.register_class(AnimatorCleaning_SubPanel)
+    # bpy.utils.register_class(VIEW3D_PT_UItidy_panel)
+    # bpy.utils.register_class(generateHairbone_SubPanel)
+    # bpy.utils.register_class(secondaryChain_SubPanel)
    
 
     
-   #hid layer button
+    #hid layer button
     bpy.types.Scene.my_addon_props = bpy.props.PointerProperty(type=MyAddonProperties)
     bpy.types.Scene.on_off_property = bpy.props.BoolProperty(name="On/Off")
     bpy.types.Scene.on_off_icon = bpy.props.StringProperty(default="HIDE_OFF")
@@ -2098,17 +1650,17 @@ def unregister():
     for c in cls:
         unregister_class(c)
 
-    #Parent Panel
-    bpy.utils.unregister_class(VIEW3D_PT_beforeGenerate_panel)
-    bpy.utils.unregister_class(VIEW3D_PT_afterGenerate_panel)
-    bpy.utils.unregister_class(VIEW3D_PT_Hair_panel)
-    #Sub Panel
-    bpy.utils.unregister_class(parentSwitchList_SubPanel)
+    # #Parent Panel
+    # bpy.utils.unregister_class(VIEW3D_PT_beforeGenerate_panel)
+    # bpy.utils.unregister_class(VIEW3D_PT_afterGenerate_panel)
+    # bpy.utils.unregister_class(VIEW3D_PT_Hair_panel)
+    # #Sub Panel
+    # bpy.utils.unregister_class(parentSwitchList_SubPanel)
     
-    bpy.utils.unregister_class(AnimatorCleaning_SubPanel)
-    bpy.utils.unregister_class(VIEW3D_PT_UItidy_panel)
-    bpy.utils.unregister_class(generateHairbone_SubPanel)
-    bpy.utils.unregister_class(secondaryChain_SubPanel)
+    # bpy.utils.unregister_class(AnimatorCleaning_SubPanel)
+    # bpy.utils.unregister_class(VIEW3D_PT_UItidy_panel)
+    # bpy.utils.unregister_class(generateHairbone_SubPanel)
+    # bpy.utils.unregister_class(secondaryChain_SubPanel)
 
     del bpy.types.Scene.my_addon_props
     del bpy.types.Scene.on_off_property
