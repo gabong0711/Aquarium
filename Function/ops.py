@@ -5,7 +5,7 @@ import bpy
 from math import pi, sin
 
 from bpy.props import (
-    StringProperty, BoolProperty, FloatProperty, IntProperty
+    StringProperty, BoolProperty, FloatProperty, IntProperty, EnumProperty
   )
 
 #propties get target rig
@@ -56,6 +56,20 @@ class MyAddonProperties(bpy.types.PropertyGroup):
         max=3
     )
 
+class Custom_properties(bpy.types.PropertyGroup):
+    hide_unhide_property: BoolProperty(
+        name		 = "Hide/Unhide"
+        ,description = "Show the visible status"
+        ,default	 = True
+        ,override	 = {'LIBRARY_OVERRIDABLE'}
+    )
+    hide_unhide_text: StringProperty (
+    default= 'HIDEN'
+    )
+    hide_unhide_icon : StringProperty(
+    default="HIDE_OFF")
+    solo_icon : StringProperty(
+    default="SOLO_ON")
 
 
 #Meta progress 
@@ -87,7 +101,6 @@ class change_constraintTg(bpy.types.Operator):
         self.report({'INFO'}, "ReAssign constraint target in metarig: " + check.name)
         return {'FINISHED'}    
         
- 
 class FixSymmetryTarget(bpy.types.Operator):
     bl_idname = "object.symmetry_target_contraints_side"
     bl_label = "SymmetryTarget"
@@ -155,10 +168,6 @@ class FixSymmetryTarget(bpy.types.Operator):
         self.report({'INFO'}, "ReAssign constraint target in L/R side: " + armature.name)
         return {'FINISHED'}  
 
-
-
-
-
 # Clean up
 class OBJECT_OT_TurnOnAllCollections(bpy.types.Operator):
     bl_idname = "object.turn_on_all_bone_collections"
@@ -166,11 +175,15 @@ class OBJECT_OT_TurnOnAllCollections(bpy.types.Operator):
     bl_description = "Turn all bone collections"
     def execute(self, context):
         # Get the selected armature object
-        armature_obj = context.scene.my_addon_props.target.data
+        obj = context.object
+        armature_obj = obj.data
+        # armature_obj = context.scene.my_addon_props.target.data
         # Make sure the selected object is an armature
         for bone_collection in armature_obj.collections_all:
+            bone_collection.is_solo = False
             bone_collection.is_visible = True
-
+        context.scene.Custom_prop.hide_unhide_icon = "HIDE_ON"
+        context.scene.Custom_prop.solo_icon = "SOLO_OFF"
         self.report({'INFO'}, "All bone collections are now visible!")
         return {'FINISHED'}
     
@@ -180,8 +193,9 @@ class OBJECT_OT_TurnAnimCollections(bpy.types.Operator):
     bl_description = "Turn anim bone collections"
     def execute(self, context):
         # Get the selected armature object
-        armature_obj = context.scene.my_addon_props.target.data
-
+        #armature_obj = context.scene.my_addon_props.target.data
+        obj = context.object
+        armature_obj = obj.data
         # List of Bone Collections need to be visible
         collection_names = ['Face', 'Body', 'Arm', 'Leg', 'Fingers', 'Root']       
         
@@ -208,22 +222,96 @@ class OBJECT_OT_SoloBoneCollection(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     collection_name: bpy.props.StringProperty(name="Collection Name")
     def execute(self, context):
-        # Get the selected armature object
-        armature_obj = context.scene.my_addon_props.target.data
-        bone_collection = armature_obj.collections.get(self.collection_name)
-        # Make sure the selected object is an armature
-
-        if bone_collection:
-            bone_collection.is_solo = True
-        else:
-            self.report({'WARNING'}, f"Bone Collection '{collection_name}' not found")    
         
-        self.report({'INFO'}, "Turn Root on only")
-        return {'FINISHED'}  
+        # Get the selected armature object
+        #armature_obj = context.scene.my_addon_props.target.data
+        obj = context.object
+        if obj and obj.type == 'ARMATURE':
+            bone_collection = obj.data.collections_all.get(self.collection_name)
+            # Make sure the selected object is an armature
+            if bone_collection:
+                if bone_collection.is_solo == False :
+                    bone_collection.is_solo = True
+                    context.scene.Custom_prop.solo_icon = "SOLO_ON"
+                else:
+                    bone_collection.is_solo = False
+                    context.scene.Custom_prop.solo_icon = "SOLO_OFF"
+                    
+                self.report({'INFO'}, "Turn "+ self.collection_name +" on only")
+                return {'FINISHED'}  
+            else:
+                self.report({'WARNING'}, f"Bone Collection "+ self.collection_name + " not found")
+                return {'FINISHED'}    
+           
+        else:
+            self.report({'WARNING'}, "Not select any armature")
+            return {'FINISHED'}
+       
+class OBJECT_OT_HideandUnhideBoneCollection(bpy.types.Operator):
+    bl_idname = "object.hide_bone_collection"
+    bl_label = "Hide and unhide bone collection"
+    bl_description = "Hide and unhide bone collection"
+    bl_options = {'REGISTER', 'UNDO'}
+    collection_name: bpy.props.StringProperty(name="Collection Name")
+    def execute(self, context):
+        
+        # Get the selected armature object
+        #armature_obj = context.scene.my_addon_props.target.data
+        obj = context.object
+        if obj and obj.type == 'ARMATURE':
+            bone_collection = obj.data.collections_all.get(self.collection_name)
+            # Make sure the selected object is an armature
+            if bone_collection:
+                if bone_collection.is_visible == True :
+                    bone_collection.is_visible = False
+                    bone_collection.is_expanded = False
+                    context.scene.Custom_prop.hide_unhide_icon = "HIDE_ON"
+                    self.report({'INFO'}, "Turn "+ self.collection_name +"off")
+                else:
+                    bone_collection.is_visible = True
+                    for bc in obj.data.collections_all:
+                        if bc.parent == bone_collection :
+                            bc.is_visible = True
+                    # bone_collection.is_expanded = True # khong can mo
+                    context.scene.Custom_prop.hide_unhide_icon = "HIDE_OFF"
+                    self.report({'INFO'}, "Turn "+ self.collection_name +" on")
+                return {'FINISHED'}  
+            else:
+                self.report({'WARNING'}, f"Bone Collection "+ self.collection_name + " not found")
+                return {'FINISHED'}    
+           
+        else:
+            self.report({'WARNING'}, "Not select any armature")
+            return {'FINISHED'}           
+
+#Bone collection list
+
 
   
 
+
+def get_bone_collections(self, context):
+    items = []
+    if not context.object: return items
+    else: 
+        obj = context.object
+        if obj and obj.type == 'ARMATURE':
+            for i, col in enumerate(obj.data.collections_all):
+                items.append((col.name, col.name, "", i))
+        return items  
+
+class BoneCollectionProps(bpy.types.PropertyGroup):
+    cl_name: bpy.props.EnumProperty(
+        name="Bone Collection",
+        description="Choose a bone collection",
+        items= get_bone_collections
+        
+    )
+
+
+
 #_________________________________________________________________________________________________________________________________________________________________
+
 cls= {
     MyAddonProperties,
     OBJECT_OT_TurnOnAllCollections,
@@ -231,7 +319,9 @@ cls= {
     OBJECT_OT_SoloBoneCollection,
     change_constraintTg,
     FixSymmetryTarget,
-
+    BoneCollectionProps,
+    OBJECT_OT_HideandUnhideBoneCollection,
+    Custom_properties,
     
     }
 
@@ -245,8 +335,8 @@ def register():
 
     #hid layer button
     bpy.types.Scene.my_addon_props = bpy.props.PointerProperty(type=MyAddonProperties)
-   
-
+    bpy.types.Scene.bc_settings = bpy.props.PointerProperty(type=BoneCollectionProps)
+    bpy.types.Scene.Custom_prop = bpy.props.PointerProperty(type=Custom_properties)
 
    
  
@@ -256,8 +346,8 @@ def unregister():
         unregister_class(c)
 
     del bpy.types.Scene.my_addon_props
-
-
+    del bpy.types.Scene.bc_settings
+    del bpy.types.Scene.Custom_prop
  
 
    

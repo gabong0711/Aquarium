@@ -1,6 +1,7 @@
 import bpy
 from bpy.types import Menu, Panel, Context
 from .Function import ops
+from .Function import LayerScript
 
 
 class VIEW3D_PT_MainMenu(Panel):
@@ -108,7 +109,14 @@ class VIEW3D_PT_Rigging(Panel):
         elif props.tab == 'GENERATED' :
             box = layout.box()
             box.label(text="This is the GENERATED tab.")
-
+            row = box.row()
+            row = box.row()
+            box = layout.box()
+            box.label(text="Cloud UI Script.")
+            row = box.row()
+            row.operator("object.textbutton_operator",text="",icon = "DUPLICATE")
+            row.operator("object.textbutton_operator",text="",icon = "FILE_CACHE")
+            box.label(text="Edit Layer is temporary in development process.")
 
         elif props.tab == 'CLEAN' :
             box = layout.box()
@@ -127,16 +135,22 @@ class VIEW3D_PT_Rigging(Panel):
             row.operator("object.turn_solo_bone_collection", text="Solo Root", icon= "SOLO_ON").collection_name = "Root"
             row.operator("object.turn_solo_bone_collection", text="Solo DEF", icon= "SOLO_ON").collection_name = "Deform Bones"
             row.operator("object.turn_solo_bone_collection", text="Solo MCH", icon= "SOLO_ON").collection_name = "Mechanism Bones"  
-            
+            row = box.row()
+            props = context.scene.bc_settings
+            row.prop(props, "cl_name")
+            row.operator("object.turn_solo_bone_collection",text="", icon= bpy.context.scene.Custom_prop.solo_icon).collection_name = props.cl_name
+            row.operator("object.hide_bone_collection",text="", icon= bpy.context.scene.Custom_prop.hide_unhide_icon).collection_name = props.cl_name
+             
+            row = box.row()
+            # row.operator("object.hide_bone_collection", text="", icon=bpy.context.scene.Custom_prop.hide_unhide_icon) = props.cl_name
 
-            # Moving control right collections
-            box = layout.box()
-            row = box.row() 
-            row.label(text= "Control Cleaner",icon="POSE_HLT")
+            # Moving control right collections 
+            # box = layout.box()
+            # row = box.row() 
+            # row.label(text= "Control Cleaner",icon="POSE_HLT")
             # row.operator("object.cleanup_ops", text= "Clean Layer",icon="BRUSH_DATA" )
 
             
-    
 
 
 class VIEW3D_PT_Animation(Panel):
@@ -168,7 +182,7 @@ classes = (
     VIEW3D_PT_MainMenu,
     VIEW3D_PT_Info,
     RiggingTabProperties,
-   
+    
 )
 
 
@@ -193,6 +207,7 @@ def register():
 
 def unregister():
     from bpy.utils import unregister_class
+    
     for cls in classes:
         unregister_class(cls)
 
