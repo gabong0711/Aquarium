@@ -259,7 +259,7 @@ class VIEW3D_PT_Info(Panel):
         row.label(text= "Support up to B4.4",icon="BLENDER") 
         
         col = layout.column()
-        row = row.col()
+        row = col.row()
         row.operator("wm.url_open", text="Download at Github").url = "https://github.com/gabong0711/Aquarium.git"
 
 
