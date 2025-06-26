@@ -1333,7 +1333,7 @@ def add_driver_to_subdivision(obj):
 
     if subdivision_modifier:
  
-#viewport       
+            #viewport       
             subdivision_modifier.driver_remove("levels")
             driver = subdivision_modifier.driver_add("levels")
             driver.driver.type = 'SCRIPTED'
@@ -1346,7 +1346,7 @@ def add_driver_to_subdivision(obj):
             var.targets[0].data_path = 'pose.bones["Properties_Character_Sintel"]["Sub_Viewport"]'        
             driver.driver.expression = 'SubdivisionLevel' 
 
-#render
+            #render
             subdivision_modifier.driver_remove("render_levels")
             driver = subdivision_modifier.driver_add("render_levels")
             driver.driver.type = 'SCRIPTED'
@@ -1587,8 +1587,7 @@ cls= {
     ,OBJECT_OT_TurnOnlyRootLayers
     ,OBJECT_OT_TurnOnlyDefLayers
     ,OBJECT_OT_TurnOnlyMchLayers
-    ,OBJECT_OT_ColoryCloudmetaAdd
-   
+    ,OBJECT_OT_ColoryCloudmetaAdd 
     ,DampedChain
     ,PurgeOperator
     ,OBJECT_OT_TurnAnimLayers

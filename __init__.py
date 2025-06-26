@@ -21,21 +21,24 @@ import os
 # from . import prefs
 from .Function import ops
 from .Function import LayerScript
+from .Function import ModelOps
 from . import UI
-from .UI_scriptextra import DrawUIPanel
+#from .UI_scriptextra import DrawUIPanel
 
 def register():
 
     ops.register()
     UI.register()
-    DrawUIPanel.register()
+    #DrawUIPanel.register()
     LayerScript.register()
+    ModelOps.register()
 
 def unregister():
     ops.unregister()
     UI.unregister()
-    DrawUIPanel.unregister()
+    #DrawUIPanel.unregister()
     LayerScript.unregister()
+    ModelOps.unregister()
 
 if __name__ == "__main__":
     register()

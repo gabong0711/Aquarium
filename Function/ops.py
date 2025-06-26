@@ -55,6 +55,11 @@ class MyAddonProperties(bpy.types.PropertyGroup):
         min=0,
         max=3
     )
+    show_box: bpy.props.BoolProperty(
+        name="Advanced",
+        description="Show advanced options",
+        default=False
+    )
 
 class Custom_properties(bpy.types.PropertyGroup):
     hide_unhide_property: BoolProperty(
@@ -286,10 +291,6 @@ class OBJECT_OT_HideandUnhideBoneCollection(bpy.types.Operator):
 
 #Bone collection list
 
-
-  
-
-
 def get_bone_collections(self, context):
     items = []
     if not context.object: return items
@@ -308,7 +309,310 @@ class BoneCollectionProps(bpy.types.PropertyGroup):
         
     )
 
+#Parent Clipping Board
+class CopyToClipboardOperator(bpy.types.Operator):
+    bl_idname = "my.copy_to_clipboard"
+    bl_label = " "
+    
+    copy_text: bpy.props.StringProperty()  # Custom property to store the text to copy
+    
+    def execute(self, context):
+        # Copy the content of copy_text to the clipboard
+        bpy.context.window_manager.clipboard = self.copy_text
+        return {'FINISHED'}
 
+
+#Driver Sub
+def add_driver_to_subdivision(obj):
+    # Check if the object has a Subdivision modifier
+    subdivision_modifier = None
+    for modifier in obj.modifiers:
+        if modifier.type == 'SUBSURF':
+            subdivision_modifier = modifier
+            break
+    target = bpy.context.scene.my_addon_props.target
+
+    if subdivision_modifier:
+ 
+            #viewport       
+            subdivision_modifier.driver_remove("levels")
+            driver = subdivision_modifier.driver_add("levels")
+            driver.driver.type = 'SCRIPTED'
+            driver.driver.variables.new()
+            var = driver.driver.variables[0]
+            var.name= 'SubdivisionLevel' 
+            var.type = 'SINGLE_PROP'
+            var.targets[0].id_type = 'OBJECT'
+            var.targets[0].id = target
+            var.targets[0].data_path = 'pose.bones["Properties_Character_Sintel"]["Sub_Viewport"]'        
+            driver.driver.expression = 'SubdivisionLevel' 
+
+            #render
+            subdivision_modifier.driver_remove("render_levels")
+            driver = subdivision_modifier.driver_add("render_levels")
+            driver.driver.type = 'SCRIPTED'
+            driver.driver.variables.new()
+            var = driver.driver.variables[0]
+            var.name= 'SubdivisionLevel' 
+            var.type = 'SINGLE_PROP'
+            var.targets[0].id_type = 'OBJECT'
+            var.targets[0].id = target
+            var.targets[0].data_path = 'pose.bones["Properties_Character_Sintel"]["Sub_Render"]'        
+            driver.driver.expression = 'SubdivisionLevel' 
+            
+
+def get_all_collections_recursive(collection):
+    collections = [collection]
+    for child_collection in collection.children:
+        collections.extend(get_all_collections_recursive(child_collection))
+    return collections
+
+class DriverSubdivision(bpy.types.Operator):
+    bl_idname = "object.driversubdivision"
+    bl_label = "Driver all subdivision"
+    bl_description = "Driver all subdivision in collection model"
+    def execute(self, context):
+        
+        collection_suffix = '_model'
+        root_collections = [collection for collection in bpy.data.collections if collection.name.endswith(collection_suffix)]
+        collections_to_modify = []
+        for root_collection in root_collections:
+            collections_to_modify.extend(get_all_collections_recursive(root_collection))
+
+
+        for collection in collections_to_modify:
+            # Iterate through objects in the collection
+            for obj in collection.objects:
+        
+                print(f"Adding driver to Subdivision modifier for object '{obj.name}' in collection '{collection.name}'")
+                add_driver_to_subdivision(obj)
+
+      
+        self.report({'INFO'}, "Drived all")
+        return {'FINISHED'}  
+
+#Magic
+
+class add_rollback(bpy.types.Operator):
+    bl_idname = "object.addrollback"
+    bl_label = "Rollback"
+    bl_description = "add mecha at rollback control"
+    clicked = bpy.props.BoolProperty(default=False)
+    def execute(self, context):
+        
+        
+        target = context.scene.my_addon_props.target
+        
+        constraint_name= 'extraroll'
+        
+        #Left back roll
+        #not able to repeat
+        pb = target.pose.bones
+        if all(name in pb for name in ['IK-RollBack.L', 'RIK-Foot.L', 'RIK-Toes.R']):
+            IKboneL= target.pose.bones['IK-RollBack.L']
+            has_constraint = any(constraint.name == constraint_name for constraint in IKboneL.constraints)
+            if not has_constraint:
+                constraint = IKboneL.constraints.new(type='TRANSFORM')
+                constraint.name = constraint_name
+                #able to repeat
+                IKboneL.constraints[constraint_name].target = target
+                IKboneL.constraints[constraint_name].subtarget = 'Roll2.L'
+                IKboneL.constraints[constraint_name].target_space = 'LOCAL'
+                IKboneL.constraints[constraint_name].owner_space = 'LOCAL'
+
+                IKboneL.constraints[constraint_name].map_from = 'ROTATION'
+                IKboneL.constraints[constraint_name].from_min_x_rot = -1.5707963705062866
+                IKboneL.constraints[constraint_name].from_max_x_rot = 1.5707963705062866
+
+                IKboneL.constraints[constraint_name].map_to = 'ROTATION'
+                IKboneL.constraints[constraint_name].to_min_x_rot = 1.0471975803375244
+                IKboneL.constraints[constraint_name].to_max_x_rot = -1.0471975803375244
+
+                IKboneL.constraints[constraint_name].mix_mode_rot = 'BEFORE'
+
+            #Right back roll
+            #not able to repeat
+            IKboneR= target.pose.bones['IK-RollBack.R']
+            has_constraint = any(constraint.name == constraint_name for constraint in IKboneR.constraints)
+            if not has_constraint:
+                constraint = IKboneR.constraints.new(type='TRANSFORM')
+                constraint.name = constraint_name
+                #able to repeat    
+                IKboneR.constraints[constraint_name].target = target
+                IKboneR.constraints[constraint_name].subtarget = 'Roll2.R'
+                IKboneR.constraints[constraint_name].target_space = 'LOCAL'
+                IKboneR.constraints[constraint_name].owner_space = 'LOCAL'
+
+                IKboneR.constraints[constraint_name].map_from = 'ROTATION'
+                IKboneR.constraints[constraint_name].from_min_x_rot = -1.5707963705062866
+                IKboneR.constraints[constraint_name].from_max_x_rot = 1.5707963705062866
+
+                IKboneR.constraints[constraint_name].map_to = 'ROTATION'
+                IKboneR.constraints[constraint_name].to_min_x_rot = 1.0471975803375244
+                IKboneR.constraints[constraint_name].to_max_x_rot = -1.0471975803375244
+
+                IKboneR.constraints[constraint_name].mix_mode_rot = 'BEFORE'
+            
+            #LEFT Front Roll
+            RIKboneL= target.pose.bones['RIK-Foot.L']
+            has_constraint = any(constraint.name == constraint_name for constraint in RIKboneL.constraints)
+            if not has_constraint:
+                constraint = RIKboneL.constraints.new(type='COPY_ROTATION')
+                constraint.name = constraint_name
+
+                #FOOT
+                #target.pose.bones['RIK-Foot.L'].constraints.new(type='COPY_ROTATION')
+
+                #able to repeat
+                RIKboneL.constraints[constraint_name].target = target
+                RIKboneL.constraints[constraint_name].subtarget = 'Roll3.L'
+                RIKboneL.constraints[constraint_name].target_space = 'LOCAL'
+                RIKboneL.constraints[constraint_name].owner_space = 'LOCAL'
+                RIKboneL.constraints[constraint_name].mix_mode = 'AFTER'
+                RIKboneL.constraints[constraint_name].invert_x = True
+            
+            #TOE
+            RIKtoeL= target.pose.bones['RIK-Toes.L']
+            has_constraint = any(constraint.name == constraint_name for constraint in RIKtoeL.constraints)
+            if not has_constraint:
+                constraint = RIKtoeL.constraints.new(type='COPY_ROTATION')
+                constraint.name = constraint_name
+                #repeat able
+                #target.pose.bones['RIK-Toes.L'].constraints.new(type='COPY_ROTATION')
+                RIKtoeL.constraints[constraint_name].target = target
+                RIKtoeL.constraints[constraint_name].subtarget = 'Roll3.L'
+                RIKtoeL.constraints[constraint_name].target_space = 'LOCAL'
+                RIKtoeL.constraints[constraint_name].owner_space = 'LOCAL'
+                RIKtoeL.constraints[constraint_name].mix_mode = 'AFTER'
+                RIKtoeL.constraints[constraint_name].invert_x = True
+
+            #RIGHT Front Roll
+            RIKboneR= target.pose.bones['RIK-Foot.R']
+            has_constraint = any(constraint.name == constraint_name for constraint in RIKboneR.constraints)
+            if not has_constraint:
+                constraint = RIKboneR.constraints.new(type='COPY_ROTATION')
+                constraint.name = constraint_name
+                #FOOT
+                #RIKboneR.constraints.new(type='COPY_ROTATION')
+                RIKboneR.constraints[constraint_name].target = target
+                RIKboneR.constraints[constraint_name].subtarget = 'Roll3.R'
+                RIKboneR.constraints[constraint_name].target_space = 'LOCAL'
+                RIKboneR.constraints[constraint_name].owner_space = 'LOCAL'
+                RIKboneR.constraints[constraint_name].mix_mode = 'AFTER'
+                RIKboneR.constraints[constraint_name].invert_x = True
+        
+            #TOE
+            RIKtoeR= target.pose.bones['RIK-Toes.R']
+            has_constraint = any(constraint.name == constraint_name for constraint in RIKtoeR.constraints)
+            if not has_constraint:
+                constraint = RIKtoeR.constraints.new(type='COPY_ROTATION')
+                constraint.name = constraint_name
+
+                #RIKtoeR.constraints.new(type='COPY_ROTATION')
+                RIKtoeR.constraints[constraint_name].target = target
+                RIKtoeR.constraints[constraint_name].subtarget = 'Roll3.R'
+                RIKtoeR.constraints[constraint_name].target_space = 'LOCAL'
+                RIKtoeR.constraints[constraint_name].owner_space = 'LOCAL'
+                RIKtoeR.constraints[constraint_name].mix_mode = 'AFTER'
+                RIKtoeR.constraints[constraint_name].invert_x = True
+            
+            self.report({'INFO'}, "Add roll bone: " + target.name)
+            #else:
+            #   self.report({'WARNING'}, "Button can only be clicked once.")
+
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "Not Setup baseExtraRoll.")
+            return {'FINISHED'}
+class ifksetting(bpy.types.Operator):
+    bl_idname = "object.ifksetting_ops"
+    bl_label = "FKIKsetting"
+    bl_description = "Setting default of IK- FK"
+    def execute(self, context):
+        
+        #Perform some operation using the input variable
+        
+        target = context.scene.my_addon_props.target
+       
+        target.pose.bones["Properties"]["ik_left_upperarm"] = 0.0
+        target.pose.bones["Properties"]["ik_right_upperarm"] = 0.0
+        #bpy.ops.pose.cloudrig_snap_bake(bones="[\"IK-POLE-UpperArm.L\"]", prop_bone="Properties", prop_id="ik_pole_follow_left_upperarm", select_bones=True)
+        #bpy.ops.pose.cloudrig_snap_bake(bones="[\"IK-POLE-UpperArm.R\"]", prop_bone="Properties", prop_id="ik_pole_follow_right_upperarm", select_bones=True)
+
+        target.pose.bones["Properties"]["ik_pole_follow_left_thigh"] = target.pose.bones["Properties"]["ik_stretch_left_finger_index1"]
+        #target.pose.bones["Properties"]["ik_pole_follow_left_upperarm"] = target.pose.bones["Properties"]["ik_stretch_left_finger_index1"] 
+        target.pose.bones["Properties"]["ik_pole_follow_right_thigh"] = target.pose.bones["Properties"]["ik_stretch_left_finger_index1"]
+        #target.pose.bones["Properties"]["ik_pole_follow_right_upperarm"] = target.pose.bones["Properties"]["ik_stretch_left_finger_index1"]
+        
+        #Eyelid
+        #target.pose.bones["MainEyeTrack.L"]["EyelidFollow"] = target.pose.bones["Properties"]["ik_pole_follow_left_upperarm"]
+        #target.pose.bones["MainEyeTrack.R"]["EyelidFollow"] = target.pose.bones["Properties"]["ik_pole_follow_left_upperarm"]
+
+        self.report({'INFO'}, "Setting IKFK done: " + target.name)
+        return {'FINISHED'}
+
+class UnlinkAction(bpy.types.Operator):
+    bl_idname = "object.unlink_action"
+    bl_label = "Unlink Active Action"
+    bl_description = "Delete all the key and action is active in Rig Final "
+    Target: bpy.props.StringProperty(name="Target")
+    def execute(self, context):
+        # Call the nine operators here
+        #bpy.ops.object.turn_on_all_layers()
+        if (self.Target != "") :
+            target = bpy.data.objects.get(self.Target)
+            if target:
+                if target.animation_data:
+                    target.animation_data.action = None
+                    self.report({'INFO'}, "Unlink test action.")
+                    return {'FINISHED'}
+            else:
+                self.report({'WARNING'}, "Not have any active object")
+                return {'FINISHED'}
+            
+class Armaturesetting(bpy.types.Operator):
+    bl_idname = "object.armature_setting"
+    bl_label = "Armaturesetting"
+    bl_description = "Setting default of Armature and get rid of test-action"
+    Target: bpy.props.StringProperty(name="Target")
+    def execute(self, context):
+        if (self.Target != "") :
+        #Perform some operation using the input variable
+            target = bpy.data.objects.get(self.Target)
+            if target and target.type == 'ARMATURE':
+                #target = context.scene.my_addon_props.target
+                target.show_in_front= False
+                target.data.show_axes= False
+                self.report({'INFO'}, "Setting armature done: " + target.name)
+                return {'FINISHED'}
+            else:
+                self.report({'WARNING'}, "Not select any active armature")
+                return {'FINISHED'}
+
+
+class Magic(bpy.types.Operator):
+    bl_idname = "object.magic"
+    bl_label = "Magic Tools"
+    bl_description = "Run all cleanup-Operators below : anim collection on, others off, turn off infont, unlink action, IKFK default setting,add extra rollback,... "
+
+    def execute(self, context):
+        if context.scene.my_addon_props.target:
+            MagicTarget = context.scene.my_addon_props.target.name
+            # Call the nine operators here
+            bpy.ops.object.turn_on_all_bone_collections()
+            #bpy.ops.object.cleanup_ops()
+            bpy.ops.object.turn_anim_bone_collections()    
+            bpy.ops.object.ifksetting_ops()
+            bpy.ops.object.addrollback()
+            bpy.ops.object.armature_setting(Target = MagicTarget )
+            bpy.ops.object.unlink_action(Target = MagicTarget )
+
+            self.report({'INFO'},"Magic had happen")
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "Didn't declare Target Rig")
+            return {'FINISHED'}
+#unlinkaction
 
 #_________________________________________________________________________________________________________________________________________________________________
 
@@ -322,7 +626,13 @@ cls= {
     BoneCollectionProps,
     OBJECT_OT_HideandUnhideBoneCollection,
     Custom_properties,
-    
+    CopyToClipboardOperator,
+    DriverSubdivision,
+    Magic,
+    Armaturesetting,
+    UnlinkAction,
+    ifksetting,
+    add_rollback,
     }
 
 #register

@@ -21,4 +21,10 @@ Upgrade the file struct from the v.0.0.38 of Colory Rigtool
 Using Github to Pull& Push
 
 V.0.1.1 :
+Update Common Function
+I will update video "How to use Aquarium" soon. 
 
+v.0.1.2 :
+Changed UX/UI of Colory Tools. 
+Updated all buttons of C-tools (Eliminate Layer Cleaner - Changed another functions in next update)
+Updated Model Tools & Pie

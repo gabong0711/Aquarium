@@ -1,6 +1,6 @@
 import bpy
 from bpy.types import Context, Menu, Panel
-
+#UI Collection preset planning
 class VIEW3D_PT_edit_drawLayerButton(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
